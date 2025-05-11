@@ -1,4 +1,24 @@
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, CallbackQueryHandler
+#from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, CallbackQueryHandler
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    MessageHandler,
+    filters,
+    ConversationHandler,
+    CallbackQueryHandler
+)
+from telegram import __version__ as TG_VER  # إضافة للتحقق من الإصدار
+
+# التحقق من توافق إصدار المكتبة
+try:
+    from telegram import __version_info__
+except ImportError:
+    __version_info__ = (0, 0, 0, 0, 0)  # type: ignore[assignment]
+
+if __version_info__ < (20, 0, 0, "alpha", 1):
+    raise RuntimeError(
+        f"هذا الكود غير متوافق مع الإصدار {TG_VER} الحالي. يلزم الإصدار 20.x أو أعلى"
+    )
 from bot.auth import AuthHandlers, GET_NAME, GET_PHONE
 from bot.user import UserHandlers
 from bot.admin import AdminHandlers
