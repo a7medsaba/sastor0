@@ -106,19 +106,20 @@ app = Application.builder().token(BOT_TOKEN).build()
     
     print(f"🚀 بدء تشغيل البوت على البورت {PORT}")
     print(f"🌐 عنوان الويب هوك: {WEBHOOK_URL}/{BOT_TOKEN}")
+       webhook_url = f"https://sastor0-production.up.railway.app/{BOT_TOKEN}"
+    print(f"🔄 جاري ضبط الويب هوك على: {webhook_url}")
     
-    # إعداد وتشغيل الويب هوك
     await app.bot.set_webhook(
-        url=f"{WEBHOOK_URL}/{BOT_TOKEN}",
-        drop_pending_updates=True
+        url=webhook_url,
+        drop_pending_updates=True,  # تجاهل الرسائل القديمة
+        allowed_updates=["message", "callback_query"]  # قلل أنواع التحديثات إذا لزم الأمر
     )
     
     await app.run_webhook(
         listen="0.0.0.0",
-        port=PORT,
+        port=8443,
         url_path=BOT_TOKEN,
-        webhook_url=f"{WEBHOOK_URL}/{BOT_TOKEN}"
+        webhook_url=webhook_url
     )
-
 if __name__ == "__main__":
     asyncio.run(main())
