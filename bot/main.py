@@ -11,7 +11,10 @@ import os
 import asyncio
 from fastapi import FastAPI
 from threading import Thread
-import uvicorn
+try:
+    import uvicorn
+except ImportError:
+    uvicorn = None
 
 # التحقق من توافق إصدار مكتبة telegram
 try:
@@ -43,7 +46,8 @@ def health_check():
 
 def run_health_check():
     health_port = int(os.environ.get("HEALTH_PORT", 8000))
-    uvicorn.run(health_app, host="0.0.0.0", port=health_port)
+    if uvicorn:
+        uvicorn.run(health_app, host="0.0.0.0", port=health_port)
 
 # تشغيل Healthcheck في خيط منفصل
 Thread(target=run_health_check, daemon=True).start()
