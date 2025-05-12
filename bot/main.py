@@ -29,7 +29,10 @@ from pathlib import Path
 import asyncio
 from fastapi import FastAPI
 from threading import Thread
-
+BOT_TOKEN = os.environ['BOT_TOKEN']  # مطلوب
+ADMIN_USER_ID = os.environ.get('ADMIN_USER_ID', '')  # اختياري
+WEBHOOK_URL = os.environ['WEBHOOK_URL']  # مطلوب
+PORT = int(os.environ.get('PORT', 8443))  # افتراضي 8443
 # إنشاء تطبيق فحص الصحة
 health_app = FastAPI()
 
@@ -95,18 +98,26 @@ async def setup_handlers(app):
     ))
 
 async def main():
-    os.system(f"chmod -R 777 {os.path.join(os.path.dirname(__file__), '../data')}")
+    os.system(f"chmod -R 775 {os.path.join(os.path.dirname(__file__), '../data')}")
     app = Application.builder().token(BOT_TOKEN).build()
     await setup_handlers(app)
-    print("✅ البوت يعمل الآن!")
+app = Application.builder().token(BOT_TOKEN).build()
+    await setup_handlers(app)
     
-    # استخدم webhook للنشر على Railway
-    await app.bot.set_webhook(url="https://sastor0-production.up.railway.app/" + BOT_TOKEN)
+    print(f"🚀 بدء تشغيل البوت على البورت {PORT}")
+    print(f"🌐 عنوان الويب هوك: {WEBHOOK_URL}/{BOT_TOKEN}")
+    
+    # إعداد وتشغيل الويب هوك
+    await app.bot.set_webhook(
+        url=f"{WEBHOOK_URL}/{BOT_TOKEN}",
+        drop_pending_updates=True
+    )
+    
     await app.run_webhook(
         listen="0.0.0.0",
-        port=int(os.environ.get("PORT", 8443)),
+        port=PORT,
         url_path=BOT_TOKEN,
-        webhook_url="https://sastor0-production.up.railway.app/" + BOT_TOKEN
+        webhook_url=f"{WEBHOOK_URL}/{BOT_TOKEN}"
     )
 
 if __name__ == "__main__":
