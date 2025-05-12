@@ -41,8 +41,8 @@ def health_check():
     return {"status": "ok", "bot": "running"}
 
 def run_health_check():
-    import uvicorn
-    uvicorn.run(health_app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("HEALTH_PORT", 8000))  # تحديد البورت بشكل واضح
+    uvicorn.run(health_app, host="0.0.0.0", port=port)
 
 # تشغيل Healthcheck في خيط منفصل (اختياري)
 Thread(target=run_health_check, daemon=True).start()
