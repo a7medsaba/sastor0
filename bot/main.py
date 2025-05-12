@@ -48,31 +48,7 @@ def run_health_check():
 # تشغيل Healthcheck في خيط منفصل (اختياري)
 # Thread(target=run_health_check, daemon=True).start()
 
-async def setup_handlers(app):
-    # ... [ابق محتوى setup_handlers كما هو بدون تغيير] ...
-    # نظام التسجيل
-    conv_auth = ConversationHandler(
-        entry_points=[CommandHandler('register', AuthHandlers.start_registration)],
-        states={
-            GET_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, AuthHandlers.get_name)],
-            GET_PHONE: [
-                MessageHandler(filters.CONTACT, AuthHandlers.get_phone),
-                MessageHandler(filters.TEXT & ~filters.COMMAND, AuthHandlers.get_phone)
-            ],
-        },
-        fallbacks=[]
-    )
-    app.add_handler(conv_auth)
 
-    # أوامر المستخدمين
-    app.add_handler(CommandHandler('start', UserHandlers.start))
-    app.add_handler(CallbackQueryHandler(UserHandlers.handle_callbacks))
-
-    # نظام العروض (للصور فقط)
-    app.add_handler(CommandHandler('offer', OfferHandlers.start_offer))
-    app.add_handler(MessageHandler(filters.PHOTO, OfferHandlers.handle_files))
-
-    # ... [بقية المعالجات] ...
 
 async def main():
     # إعداد صلاحيات المجلدات
