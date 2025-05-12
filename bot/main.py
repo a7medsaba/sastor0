@@ -9,6 +9,7 @@ from telegram.ext import (
 from telegram import version as TG_VER
 import os
 import asyncio
+import uvicorn
 from fastapi import FastAPI
 from threading import Thread
 
