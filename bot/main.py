@@ -65,7 +65,7 @@ async def setup_handlers(app):
 
     # نظام العروض
     app.add_handler(CommandHandler('offer', OfferHandlers.start_offer))
-    app.add_handler(MessageHandler(filters.PHOTO | filters.Document.ALL, OfferHandlers.handle_files))
+    app.add_handler(MessageHandler(filters.PHOTO | filters.DOCUMENT.ALL, OfferHandlers.handle_files))
 
     # أوامر المسؤول
     app.add_handler(CommandHandler('admin', AdminHandlers.admin_panel))
