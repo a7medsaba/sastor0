@@ -1,4 +1,3 @@
-#from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, CallbackQueryHandler
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -7,18 +6,19 @@ from telegram.ext import (
     ConversationHandler,
     CallbackQueryHandler
 )
-from telegram import __version__ as TG_VER  # إضافة للتحقق من الإصدار
+from telegram import __version__ as TG_VER
 
 # التحقق من توافق إصدار المكتبة
 try:
     from telegram import __version_info__
 except ImportError:
-    __version_info__ = (0, 0, 0, 0, 0)  # type: ignore[assignment]
+    __version_info__ = (0, 0, 0, 0, 0)
 
 if __version_info__ < (20, 0, 0, "alpha", 1):
     raise RuntimeError(
         f"هذا الكود غير متوافق مع الإصدار {TG_VER} الحالي. يلزم الإصدار 20.x أو أعلى"
     )
+
 from bot.auth import AuthHandlers, GET_NAME, GET_PHONE
 from bot.user import UserHandlers
 from bot.admin import AdminHandlers
@@ -27,9 +27,8 @@ from bot.config import BOT_TOKEN
 import os
 from pathlib import Path
 import asyncio
-async def setup_handlers(app):
 
-    
+async def setup_handlers(app):
     # نظام التسجيل
     conv_auth = ConversationHandler(
         entry_points=[CommandHandler('register', AuthHandlers.start_registration)],
@@ -50,11 +49,12 @@ async def setup_handlers(app):
 
     # نظام العروض
     app.add_handler(CommandHandler('offer', OfferHandlers.start_offer))
-   # app.add_handler(MessageHandler(filters.PHOTO | filters.ATTACHMENT, OfferHandlers.handle_files))
-app.add_handler(MessageHandler(filters.PHOTO | filters.Document.ALL, OfferHandlers.handle_files))
+    app.add_handler(MessageHandler(filters.PHOTO | filters.Document.ALL, OfferHandlers.handle_files))
+
     # أوامر المسؤول
     app.add_handler(CommandHandler('admin', AdminHandlers.admin_panel))
- # ============= إدارة العملات =============
+    
+    # إدارة العملات
     app.add_handler(CallbackQueryHandler(
         AdminHandlers.manage_currencies,
         pattern="^manage_currencies$"
@@ -80,17 +80,10 @@ app.add_handler(MessageHandler(filters.PHOTO | filters.Document.ALL, OfferHandle
 
 async def main():
     os.system(f"chmod -R 777 {os.path.join(os.path.dirname(__file__), '../data')}")
-# os.system(f"chmod -R 775 {os.path.join(os.path.dirname(__file__), '../data')}")
-    # إنشاء التطبيق مع الإصدار الجديد
     app = Application.builder().token(BOT_TOKEN).build()
-    
     await setup_handlers(app)
-    
-    # بدء البوت
-  # إضافة هذه السطر للتأكد من تشغيل البوت
     print("✅ البوت يعمل الآن!")
     await app.run_polling()
 
 if __name__ == "__main__":
-    import asyncio
     asyncio.run(main())
