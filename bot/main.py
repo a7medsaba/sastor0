@@ -1,36 +1,25 @@
+import os
+import asyncio
 from telegram.ext import (
     Application,
     CommandHandler,
     MessageHandler,
-    filters,
+    CallbackQueryHandler,
     ConversationHandler,
-    CallbackQueryHandler
+    filters
 )
-from telegram import version as TG_VER
-import os
-import asyncio
-
-# التحقق من توافق إصدار مكتبة telegram
-try:
-    from telegram import version_info
-except ImportError:
-    version_info = (0, 0, 0, 0, 0)
-
-if version_info < (20, 0, 0, "alpha", 1):
-    raise RuntimeError(
-        f"هذا الكود غير متوافق مع الإصدار {TG_VER} الحالي. يلزم الإصدار 20.x أو أعلى"
-    )
 
 from bot.auth import AuthHandlers, GET_NAME, GET_PHONE
 from bot.user import UserHandlers
 from bot.admin import AdminHandlers
 from bot.offers import OfferHandlers
 
-# المتغيرات البيئية
+# قراءة المتغيرات البيئية من إعدادات Railway
 BOT_TOKEN = os.environ['BOT_TOKEN']
+ADMIN_ID = int(os.environ['ADMIN_USER_ID'])  # تأكد أن القيمة رقم صحيح
 
 async def setup_handlers(app):
-    # إضافة معالجات التسجيل
+    # معالج التسجيل عبر ConversationHandler
     conv_auth = ConversationHandler(
         entry_points=[CommandHandler('register', AuthHandlers.start_registration)],
         states={
@@ -48,12 +37,15 @@ async def setup_handlers(app):
     app.add_handler(CommandHandler('start', UserHandlers.start))
     app.add_handler(CallbackQueryHandler(UserHandlers.handle_callbacks))
 
+    # أوامر الأدمن (مثال بسيط)
+    app.add_handler(CommandHandler('admin', lambda update, context: update.message.reply_text("أهلاً أيها الأدمن") if update.effective_user.id == ADMIN_ID else None))
+
     # نظام العروض
     app.add_handler(CommandHandler('offer', OfferHandlers.start_offer))
     app.add_handler(MessageHandler(filters.PHOTO, OfferHandlers.handle_files))
 
 async def main():
-    # إعداد صلاحيات المجلد
+    # إعداد صلاحيات المجلد (إن وجد)
     os.system(f"chmod -R 775 {os.path.join(os.path.dirname(__file__), '../data')}")
 
     # إنشاء التطبيق
