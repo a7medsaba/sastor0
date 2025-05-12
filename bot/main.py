@@ -9,9 +9,9 @@ from telegram.ext import (
 from telegram import version as TG_VER
 import os
 import asyncio
-import uvicorn
 from fastapi import FastAPI
 from threading import Thread
+import uvicorn
 
 # التحقق من توافق إصدار مكتبة telegram
 try:
@@ -34,7 +34,7 @@ BOT_TOKEN = os.environ['BOT_TOKEN']
 WEBHOOK_URL = os.environ['WEBHOOK_URL']
 PORT = int(os.environ.get('PORT', 8443))
 
-# حل عربي مستقر: تعطيل Healthcheck نهائيًا (الأفضل لـ Railway)
+# إعداد تطبيق FastAPI للـ Healthcheck
 health_app = FastAPI()
 
 @health_app.get("/health")
@@ -42,14 +42,14 @@ def health_check():
     return {"status": "ok", "bot": "running"}
 
 def run_health_check():
-    port = int(os.environ.get("HEALTH_PORT", 8000))  # تحديد البورت بشكل واضح
-    uvicorn.run(health_app, host="0.0.0.0", port=port)
+    health_port = int(os.environ.get("HEALTH_PORT", 8000))
+    uvicorn.run(health_app, host="0.0.0.0", port=health_port)
 
-# تشغيل Healthcheck في خيط منفصل (اختياري)
+# تشغيل Healthcheck في خيط منفصل
 Thread(target=run_health_check, daemon=True).start()
 
 async def setup_handlers(app):
-    # إضافة المعالجات
+    # إضافة معالجات التسجيل
     conv_auth = ConversationHandler(
         entry_points=[CommandHandler('register', AuthHandlers.start_registration)],
         states={
@@ -67,39 +67,34 @@ async def setup_handlers(app):
     app.add_handler(CommandHandler('start', UserHandlers.start))
     app.add_handler(CallbackQueryHandler(UserHandlers.handle_callbacks))
 
-    # نظام العروض (للصور فقط)
+    # نظام العروض
     app.add_handler(CommandHandler('offer', OfferHandlers.start_offer))
     app.add_handler(MessageHandler(filters.PHOTO, OfferHandlers.handle_files))
 
-    # إضافة المزيد من المعالجات حسب الحاجة
-
 async def main():
-    # إعداد صلاحيات المجلدات
+    # إعداد صلاحيات المجلد
     os.system(f"chmod -R 775 {os.path.join(os.path.dirname(__file__), '../data')}")
 
-    # إنشاء تطبيق البوت
+    # إنشاء التطبيق
     app = Application.builder().token(BOT_TOKEN).build()
     await setup_handlers(app)
 
-    # طباعة معلومات التشغيل
+    # طباعة معلومات الويب هوك
     webhook_url = f"{WEBHOOK_URL}/{BOT_TOKEN}"
     print(f"🌐 عنوان الويب هوك: {webhook_url}")
     print(f"🔄 جاري ضبط الويب هوك على البورت {PORT}...")
 
     try:
-        # 1. احذف أي ويب هوك قديم
         await app.bot.delete_webhook()
         await asyncio.sleep(1)
-        
-        # 2. اضبط الويب هوك الجديد
+
         await app.bot.set_webhook(
             url=webhook_url,
             drop_pending_updates=True,
             allowed_updates=["message", "callback_query"]
         )
         print("✅ تم ضبط الويب هوك بنجاح!")
-        
-        # 3. تشغيل الويب هوك
+
         await app.run_webhook(
             listen="0.0.0.0",
             port=PORT,
