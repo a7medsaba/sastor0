@@ -27,7 +27,22 @@ from bot.config import BOT_TOKEN
 import os
 from pathlib import Path
 import asyncio
+from fastapi import FastAPI
+from threading import Thread
 
+# إنشاء تطبيق فحص الصحة
+health_app = FastAPI()
+
+@health_app.get("/health")
+def health_check():
+    return {"status": "ok", "bot": "running"}
+
+# تشغيل الخادم في خيط منفصل
+def run_health_check():
+    import uvicorn
+    uvicorn.run(health_app, host="0.0.0.0", port=8000)
+
+Thread(target=run_health_check, daemon=True).start()
 async def setup_handlers(app):
     # نظام التسجيل
     conv_auth = ConversationHandler(
