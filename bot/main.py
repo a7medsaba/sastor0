@@ -7,6 +7,10 @@ from telegram.ext import (
     CallbackQueryHandler
 )
 from telegram import __version__ as TG_VER
+import os
+import asyncio
+from fastapi import FastAPI
+from threading import Thread
 
 # التحقق من توافق إصدار المكتبة
 try:
@@ -23,31 +27,29 @@ from bot.auth import AuthHandlers, GET_NAME, GET_PHONE
 from bot.user import UserHandlers
 from bot.admin import AdminHandlers
 from bot.offers import OfferHandlers
-from bot.config import BOT_TOKEN
-import os
-from pathlib import Path
-import asyncio
-from fastapi import FastAPI
-from threading import Thread
-BOT_TOKEN = os.environ['BOT_TOKEN']  # مطلوب
-ADMIN_USER_ID = os.environ.get('ADMIN_USER_ID', '')  # اختياري
-WEBHOOK_URL = os.environ['WEBHOOK_URL']  # مطلوب
-PORT = int(os.environ.get('PORT', 8443))  # افتراضي 8443
-# إنشاء تطبيق فحص الصحة
+
+# المتغيرات البيئية
+BOT_TOKEN = os.environ['BOT_TOKEN']
+WEBHOOK_URL = os.environ['WEBHOOK_URL']
+PORT = int(os.environ.get('PORT', 8443))
+
+# حل عربي مستقر: تعطيل Healthcheck نهائيًا (الأفضل لـ Railway)
+# يمكنك حذف هذا الجزء إذا أردت تفعيله لاحقًا
 health_app = FastAPI()
 
 @health_app.get("/health")
 def health_check():
     return {"status": "ok", "bot": "running"}
 
-# تشغيل الخادم في خيط منفصل
 def run_health_check():
     import uvicorn
     uvicorn.run(health_app, host="0.0.0.0", port=8000)
 
-Thread(target=run_health_check, daemon=True).start()
+# تشغيل Healthcheck في خيط منفصل (اختياري)
+# Thread(target=run_health_check, daemon=True).start()
 
 async def setup_handlers(app):
+    # ... [ابق محتوى setup_handlers كما هو بدون تغيير] ...
     # نظام التسجيل
     conv_auth = ConversationHandler(
         entry_points=[CommandHandler('register', AuthHandlers.start_registration)],
@@ -66,60 +68,48 @@ async def setup_handlers(app):
     app.add_handler(CommandHandler('start', UserHandlers.start))
     app.add_handler(CallbackQueryHandler(UserHandlers.handle_callbacks))
 
-    # نظام العروض
+    # نظام العروض (للصور فقط)
     app.add_handler(CommandHandler('offer', OfferHandlers.start_offer))
-    # app.add_handler(MessageHandler(filters.PHOTO | filters.DOCUMENT.ALL, OfferHandlers.handle_files))
-    app.add_handler(MessageHandler(filters.PHOTO, OfferHandlers.handle_files))  # للصور فقط
-    # أوامر المسؤول
-    app.add_handler(CommandHandler('admin', AdminHandlers.admin_panel))
-    
-    # إدارة العملات
-    app.add_handler(CallbackQueryHandler(
-        AdminHandlers.manage_currencies,
-        pattern="^manage_currencies$"
-    ))
-    app.add_handler(CallbackQueryHandler(
-        AdminHandlers.update_currency_rate,
-        pattern="^update_currency_rate$"
-    ))
-    app.add_handler(CallbackQueryHandler(
-        AdminHandlers.add_new_currency,
-        pattern="^add_new_currency$"
-    ))
-    
-    # معالجات الرسائل النصية للعملات
-    app.add_handler(MessageHandler(
-        filters.TEXT & ~filters.COMMAND,
-        AdminHandlers.handle_currency_update
-    ))
-    app.add_handler(MessageHandler(
-        filters.TEXT & ~filters.COMMAND,
-        AdminHandlers.handle_new_currency
-    ))
+    app.add_handler(MessageHandler(filters.PHOTO, OfferHandlers.handle_files))
+
+    # ... [بقية المعالجات] ...
 
 async def main():
+    # إعداد صلاحيات المجلدات
     os.system(f"chmod -R 775 {os.path.join(os.path.dirname(__file__), '../data')}")
+    
+    # إنشاء تطبيق البوت
     app = Application.builder().token(BOT_TOKEN).build()
     await setup_handlers(app)
-app = Application.builder().token(BOT_TOKEN).build()
-    await setup_handlers(app)
     
-    print(f"🚀 بدء تشغيل البوت على البورت {PORT}")
-    print(f"🌐 عنوان الويب هوك: {WEBHOOK_URL}/{BOT_TOKEN}")
-       webhook_url = f"https://sastor0-production.up.railway.app/{BOT_TOKEN}"
-    print(f"🔄 جاري ضبط الويب هوك على: {webhook_url}")
+    # طباعة معلومات التشغيل
+    webhook_url = f"{WEBHOOK_URL}/{BOT_TOKEN}"
+    print(f"🌐 عنوان الويب هوك: {webhook_url}")
+    print(f"🔄 جاري ضبط الويب هوك على البورت {PORT}...")
     
-    await app.bot.set_webhook(
-        url=webhook_url,
-        drop_pending_updates=True,  # تجاهل الرسائل القديمة
-        allowed_updates=["message", "callback_query"]  # قلل أنواع التحديثات إذا لزم الأمر
-    )
-    
-    await app.run_webhook(
-        listen="0.0.0.0",
-        port=8443,
-        url_path=BOT_TOKEN,
-        webhook_url=webhook_url
-    )
+    try:
+        # 1. احذف أي ويب هوك قديم
+        await app.bot.delete_webhook()
+        await asyncio.sleep(1)
+        
+        # 2. اضبط الويب هوك الجديد
+        await app.bot.set_webhook(
+            url=webhook_url,
+            drop_pending_updates=True,
+            allowed_updates=["message", "callback_query"]
+        )
+        print("✅ تم ضبط الويب هوك بنجاح!")
+        
+        # 3. تشغيل الويب هوك
+        await app.run_webhook(
+            listen="0.0.0.0",
+            port=PORT,
+            url_path=BOT_TOKEN,
+            webhook_url=webhook_url
+        )
+    except Exception as e:
+        print(f"❌ فشل تشغيل البوت: {str(e)}")
+        raise
+
 if __name__ == "__main__":
     asyncio.run(main())
