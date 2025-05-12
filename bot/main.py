@@ -43,6 +43,7 @@ def run_health_check():
     uvicorn.run(health_app, host="0.0.0.0", port=8000)
 
 Thread(target=run_health_check, daemon=True).start()
+
 async def setup_handlers(app):
     # نظام التسجيل
     conv_auth = ConversationHandler(
@@ -98,7 +99,15 @@ async def main():
     app = Application.builder().token(BOT_TOKEN).build()
     await setup_handlers(app)
     print("✅ البوت يعمل الآن!")
-    await app.run_polling()
+    
+    # استخدم webhook للنشر على Railway
+    await app.bot.set_webhook(url="https://sastor0-production.up.railway.app/" + BOT_TOKEN)
+    await app.run_webhook(
+        listen="0.0.0.0",
+        port=int(os.environ.get("PORT", 8443)),
+        url_path=BOT_TOKEN,
+        webhook_url="https://sastor0-production.up.railway.app/" + BOT_TOKEN
+    )
 
 if __name__ == "__main__":
     asyncio.run(main())
