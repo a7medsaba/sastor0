@@ -1,6 +1,6 @@
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
 from telegram.ext import ConversationHandler
-from bot.database import Database
+from .database import Database
 from datetime import datetime
 
 GET_NAME, GET_PHONE = range(2)
