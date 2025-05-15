@@ -1,6 +1,6 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from bot.database import Database
-from bot.currency import CurrencyConverter
+from .database import Database
+from .currency import CurrencyConverter
 
 class UserHandlers:
     @staticmethod
