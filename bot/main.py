@@ -22,10 +22,10 @@ if version_info < (20, 0, 0, "alpha", 1):
     )
 
 # ✅ تعديل المسارات لتناسب مجلد bot/
-from bot.auth import AuthHandlers, GET_NAME, GET_PHONE
-from bot.user import UserHandlers
-from bot.admin import AdminHandlers
-from bot.offers import OfferHandlers
+from .auth import AuthHandlers, GET_NAME, GET_PHONE
+from .user import UserHandlers
+from .admin import AdminHandlers
+from .offers import OfferHandlers
 
 # المتغيرات البيئية
 BOT_TOKEN = os.environ['BOT_TOKEN']
