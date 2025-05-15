@@ -1,62 +1,43 @@
-from telegram.ext import (
-    Application,
-    CommandHandler,
-    MessageHandler,
-    filters,
-    ConversationHandler,
-    CallbackQueryHandler
-)
-from telegram import version as TG_VER
-import os
+from aiogram import Bot, Dispatcher, types
+from aiogram.types import ParseMode
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters.state import State, StatesGroup
 import asyncio
-
-# التحقق من توافق إصدار مكتبة telegram
-try:
-    from telegram import version_info
-except ImportError:
-    version_info = (0, 0, 0, 0, 0)
-
-if version_info < (20, 0, 0, "alpha", 1):
-    raise RuntimeError(
-        f"هذا الكود غير متوافق مع الإصدار {TG_VER} الحالي. يلزم الإصدار 20.x أو أعلى"
-    )
-
-# استيراد ملفاتك من مجلد bot
-from .auth import AuthHandlers, GET_NAME, GET_PHONE
-from .user import UserHandlers
-from .admin import AdminHandlers
-from .offers import OfferHandlers
+import os
 
 BOT_TOKEN = os.environ['BOT_TOKEN']
-ADMIN_USER_ID = int(os.environ['ADMIN_USER_ID'])
 
-async def setup_handlers(app):
-    conv_auth = ConversationHandler(
-        entry_points=[CommandHandler('register', AuthHandlers.start_registration)],
-        states={
-            GET_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, AuthHandlers.get_name)],
-            GET_PHONE: [
-                MessageHandler(filters.CONTACT, AuthHandlers.get_phone),
-                MessageHandler(filters.TEXT & ~filters.COMMAND, AuthHandlers.get_phone)
-            ],
-        },
-        fallbacks=[]
-    )
-    app.add_handler(conv_auth)
+bot = Bot(token=BOT_TOKEN)
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
 
-    app.add_handler(CommandHandler('start', UserHandlers.start))
-    app.add_handler(CallbackQueryHandler(UserHandlers.handle_callbacks))
-    app.add_handler(CommandHandler('offer', OfferHandlers.start_offer))
-    app.add_handler(MessageHandler(filters.PHOTO, OfferHandlers.handle_files))
+class Registration(StatesGroup):
+    get_name = State()
+    get_phone = State()
+
+@dp.message_handler(commands=['register'])
+async def start_registration(message: types.Message):
+    await message.answer("يرجى إدخال اسمك:")
+    await Registration.get_name.set()
+
+@dp.message_handler(state=Registration.get_name)
+async def get_name(message: types.Message, state: FSMContext):
+    await state.update_data(name=message.text)
+    await message.answer("يرجى إرسال رقم هاتفك أو كتابته:")
+    await Registration.get_phone.set()
+
+@dp.message_handler(content_types=['contact', 'text'], state=Registration.get_phone)
+async def get_phone(message: types.Message, state: FSMContext):
+    phone = message.contact.phone_number if message.contact else message.text
+    await state.update_data(phone=phone)
+    data = await state.get_data()
+    await message.answer(f"تم التسجيل!\nالاسم: {data['name']}\nالهاتف: {data['phone']}")
+    await state.finish()
 
 async def main():
-    # تعديل صلاحيات مجلد البيانات حسب الحاجة
-    os.system(f"chmod -R 775 {os.path.join(os.path.dirname(__file__), '../data')}")
-    app = Application.builder().token(BOT_TOKEN).build()
-    await setup_handlers(app)
-
-    print("✅ يتم الآن تشغيل البوت عبر Long Polling...")
-    await app.run_polling()
+    print("✅ بدء تشغيل البوت عبر Aiogram...")
+    await dp.start_polling()
 
 if __name__ == "__main__":
     asyncio.run(main())
