@@ -1,0 +1,8 @@
+app = "sastornew"
+
+[env]
+BOT_TOKEN = "توكن_البوت"
+ADMIN_USER_ID = "7646983713:AAEsQVDD0aPKAr_cLJ8xxvefXcTw7unylRg"
+
+[build]
+  image = "python:3.9-slim"
