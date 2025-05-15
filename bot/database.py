@@ -2,7 +2,7 @@ import json
 import shutil
 from pathlib import Path
 from datetime import datetime
-from bot.config import FILE_PATHS
+from .config import FILE_PATHS
 
 class Database:
     @staticmethod
