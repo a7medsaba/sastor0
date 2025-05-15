@@ -1,4 +1,4 @@
-from bot.auth import AuthHandlers
+from .auth import AuthHandlers
 
 class OfferHandlers:
     @staticmethod
