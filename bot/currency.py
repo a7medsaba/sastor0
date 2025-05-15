@@ -1,4 +1,4 @@
-from bot.config import DEFAULT_CURRENCY, CURRENCY_RATES
+from .config import DEFAULT_CURRENCY, CURRENCY_RATES
 
 class CurrencyConverter:
     @staticmethod
